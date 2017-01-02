@@ -3521,8 +3521,8 @@ public class BinaryJedis implements BasicCommands, BinaryJedisCommands, MultiKey
    * @param key
    * @param milliseconds
    * @return Integer reply, specifically: 1: the timeout was set. 0: the timeout was not set since
-   *         the key already has an associated timeout (this may happen only in Redis versions <
-   *         2.1.3, Redis >= 2.1.3 will happily update the timeout), or the key does not exist.
+   *         the key already has an associated timeout (this may happen only in Redis versions &lt;
+   *         2.1.3, Redis &ge; 2.1.3 will happily update the timeout), or the key does not exist.
    */
   @Override
   public Long pexpire(final byte[] key, final long milliseconds) {
