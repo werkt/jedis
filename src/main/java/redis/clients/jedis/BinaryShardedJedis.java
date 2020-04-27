@@ -810,12 +810,12 @@ public class BinaryShardedJedis extends Sharded<Jedis, JedisShardInfo> implement
     return j.echo(arg);
   }
 
-  public List<byte[]> brpop(final byte[] arg) {
+  public List<byte[]> brpop(final byte[] arg) throws InterruptedException {
     Jedis j = getShard(arg);
     return j.brpop(arg);
   }
 
-  public List<byte[]> blpop(final byte[] arg) {
+  public List<byte[]> blpop(final byte[] arg) throws InterruptedException {
     Jedis j = getShard(arg);
     return j.blpop(arg);
   }

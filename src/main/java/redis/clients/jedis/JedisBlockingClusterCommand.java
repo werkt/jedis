@@ -9,23 +9,23 @@ import redis.clients.jedis.exceptions.JedisNoReachableClusterNodeException;
 import redis.clients.jedis.exceptions.JedisRedirectionException;
 import redis.clients.jedis.util.JedisClusterCRC16;
 
-public abstract class JedisClusterCommand<T> {
+public abstract class JedisBlockingClusterCommand<T> {
 
   private final JedisClusterConnectionHandler connectionHandler;
   private final int maxAttempts;
 
-  public JedisClusterCommand(JedisClusterConnectionHandler connectionHandler, int maxAttempts) {
+  public JedisBlockingClusterCommand(JedisClusterConnectionHandler connectionHandler, int maxAttempts) {
     this.connectionHandler = connectionHandler;
     this.maxAttempts = maxAttempts;
   }
 
-  public abstract T execute(Jedis connection);
+  public abstract T execute(Jedis connection) throws InterruptedException;
 
-  public T run(String key) {
+  public T run(String key) throws InterruptedException {
     return runWithRetries(JedisClusterCRC16.getSlot(key), this.maxAttempts, false, null);
   }
 
-  public T run(int keyCount, String... keys) {
+  public T run(int keyCount, String... keys) throws InterruptedException {
     if (keys == null || keys.length == 0) {
       throw new JedisClusterOperationException("No way to dispatch this command to Redis Cluster.");
     }
@@ -45,11 +45,11 @@ public abstract class JedisClusterCommand<T> {
     return runWithRetries(slot, this.maxAttempts, false, null);
   }
 
-  public T runBinary(byte[] key) {
+  public T runBinary(byte[] key) throws InterruptedException {
     return runWithRetries(JedisClusterCRC16.getSlot(key), this.maxAttempts, false, null);
   }
 
-  public T runBinary(int keyCount, byte[]... keys) {
+  public T runBinary(int keyCount, byte[]... keys) throws InterruptedException {
     if (keys == null || keys.length == 0) {
       throw new JedisClusterOperationException("No way to dispatch this command to Redis Cluster.");
     }
@@ -69,19 +69,7 @@ public abstract class JedisClusterCommand<T> {
     return runWithRetries(slot, this.maxAttempts, false, null);
   }
 
-  public T runWithAnyNode() {
-    Jedis connection = null;
-    try {
-      connection = connectionHandler.getConnection();
-      return execute(connection);
-    } catch (JedisConnectionException e) {
-      throw e;
-    } finally {
-      releaseConnection(connection);
-    }
-  }
-
-  private T runWithRetries(final int slot, int attempts, boolean tryRandomNode, JedisRedirectionException redirect) {
+  private T runWithRetries(final int slot, int attempts, boolean tryRandomNode, JedisRedirectionException redirect) throws InterruptedException {
     while (attempts > 0) {
       Jedis connection = null;
       try {

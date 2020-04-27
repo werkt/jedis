@@ -20,13 +20,13 @@ public interface MultiKeyCommands {
 
   Long exists(String... keys);
 
-  List<String> blpop(int timeout, String... keys);
+  List<String> blpop(int timeout, String... keys) throws InterruptedException;
 
-  List<String> brpop(int timeout, String... keys);
+  List<String> brpop(int timeout, String... keys) throws InterruptedException;
 
-  List<String> blpop(String... args);
+  List<String> blpop(String... args) throws InterruptedException;
 
-  List<String> brpop(String... args);
+  List<String> brpop(String... args) throws InterruptedException;
 
   /**
    * Returns all the keys matching the glob-style pattern. For example if
@@ -100,7 +100,7 @@ public interface MultiKeyCommands {
 
   Long zunionstore(String dstkey, ZParams params, String... sets);
 
-  String brpoplpush(String source, String destination, int timeout);
+  String brpoplpush(String source, String destination, int timeout) throws InterruptedException;
 
   Long publish(String channel, String message);
 
