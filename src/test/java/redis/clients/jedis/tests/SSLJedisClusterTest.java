@@ -157,11 +157,13 @@ public class SSLJedisClusterTest extends JedisClusterTest {
       jc = new JedisCluster(new HostAndPort("127.0.0.1", 8379), DEFAULT_TIMEOUT, DEFAULT_TIMEOUT,
           DEFAULT_REDIRECTIONS, "cluster", null, DEFAULT_CONFIG, true, 
           null, sslParameters, null, hostAndPortMap);
-      Assert.fail("The code did not throw the expected JedisConnectionException.");
-    } catch (JedisConnectionException e) {
-      Assert.assertEquals(SSLException.class, e.getCause().getClass());
-      Assert.assertEquals(SSLHandshakeException.class, e.getCause().getCause().getClass());
-      Assert.assertEquals(CertificateException.class, e.getCause().getCause().getCause().getClass());
+      Assert.fail("The code did not throw the expected JedisNoReachableClusterNodeException.");
+    } catch (JedisNoReachableClusterNodeException e) {
+      Assert.assertEquals(e.getSuppressed().length, 1);
+      Throwable suppressed = e.getSuppressed()[0];
+      Assert.assertEquals(JedisConnectionException.class, suppressed.getClass());
+      Assert.assertEquals(SSLHandshakeException.class, suppressed.getCause().getClass());
+      Assert.assertEquals(CertificateException.class, suppressed.getCause().getCause().getClass());
     } finally {
       if (jc != null) {
         jc.close();
@@ -229,16 +231,18 @@ public class SSLJedisClusterTest extends JedisClusterTest {
       jc = new JedisCluster(new HostAndPort("localhost", 8379), DEFAULT_TIMEOUT, DEFAULT_TIMEOUT,
             DEFAULT_REDIRECTIONS, "cluster", null, DEFAULT_CONFIG, true, 
             sslSocketFactory, null, null, null);
-      Assert.fail("The code did not throw the expected JedisConnectionException.");
-    } catch (JedisConnectionException e) {
+      Assert.fail("The code did not throw the expected JedisNoReachableClusterNodeException.");
+    } catch (JedisNoReachableClusterNodeException e) {
+      Assert.assertEquals(e.getSuppressed().length, 1);
+      Throwable suppressed = e.getSuppressed()[0];
+      Assert.assertEquals("Unexpected suppressed exception.",
+          JedisConnectionException.class, suppressed.getClass());
       Assert.assertEquals("Unexpected first inner exception.",
-          SSLException.class, e.getCause().getClass());
+          SSLException.class, suppressed.getCause().getClass());
       Assert.assertEquals("Unexpected second inner exception.",
-          SSLException.class, e.getCause().getCause().getClass());
-      Assert.assertEquals("Unexpected third inner exception",
-          RuntimeException.class, e.getCause().getCause().getCause().getClass());
-      Assert.assertEquals("Unexpected fourth inner exception.",
-          InvalidAlgorithmParameterException.class, e.getCause().getCause().getCause().getCause().getClass());
+          RuntimeException.class, suppressed.getCause().getCause().getClass());
+      Assert.assertEquals("Unexpected third inner exception.",
+          InvalidAlgorithmParameterException.class, suppressed.getCause().getCause().getCause().getClass());
     } finally {
       if (jc != null) {
         jc.close();
