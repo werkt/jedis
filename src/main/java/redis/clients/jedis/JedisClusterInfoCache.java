@@ -14,6 +14,7 @@ import javax.net.ssl.SSLSocketFactory;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
 import redis.clients.jedis.exceptions.JedisConnectionException;
+import redis.clients.jedis.exceptions.JedisDataException;
 import redis.clients.jedis.exceptions.JedisException;
 import redis.clients.jedis.util.SafeEncoder;
 
@@ -66,12 +67,50 @@ public class JedisClusterInfoCache {
     this.hostAndPortMap = hostAndPortMap;
   }
 
+  List<Object> singleNodeClusterSlots(String host, long port) {
+    // ERR This instance has cluster support disabled
+    List<Object> slots = new ArrayList();
+
+    /*
+    1) 1) (integer) 0
+       2) (integer) 16383
+       3) 1) <client host>
+          2) (integer) <client port>
+          3) "<sha1 of client host>"
+    */
+
+    // slotInfo;
+    List<Object> slotInfo = new ArrayList();
+    slots.add(slotInfo);
+    slotInfo.add(0l); // slot range start
+    slotInfo.add(16383l); // slot range end
+    // hostInfos
+    List<Object> hostInfos = new ArrayList();
+    slotInfo.add(hostInfos);
+    hostInfos.add(host.getBytes());
+    hostInfos.add(port);
+    hostInfos.add("260f7a8cd4f6938b3cc185a619847cb83d670219".getBytes());
+
+    return slots;
+  }
+
+  private List<Object> failsafeClusterSlots(Jedis jedis) {
+    try {
+      return jedis.clusterSlots();
+    } catch (JedisDataException e) {
+      if (e.getMessage().equals("ERR This instance has cluster support disabled")) {
+        return singleNodeClusterSlots(jedis.getClient().getHost(), jedis.getClient().getPort());
+      }
+      throw e;
+    }
+  }
+
   public void discoverClusterNodesAndSlots(Jedis jedis) {
     w.lock();
 
     try {
       reset();
-      List<Object> slots = jedis.clusterSlots();
+      List<Object> slots = failsafeClusterSlots(jedis);
 
       for (Object slotInfoObj : slots) {
         List<Object> slotInfo = (List<Object>) slotInfoObj;
@@ -145,7 +184,7 @@ public class JedisClusterInfoCache {
   }
 
   private void discoverClusterSlots(Jedis jedis) {
-    List<Object> slots = jedis.clusterSlots();
+    List<Object> slots = failsafeClusterSlots(jedis);
     this.slots.clear();
     this.mapping.clear();
 
