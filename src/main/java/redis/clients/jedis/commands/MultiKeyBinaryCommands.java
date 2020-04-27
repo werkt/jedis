@@ -16,13 +16,13 @@ public interface MultiKeyBinaryCommands {
 
   Long exists(byte[]... keys);
 
-  List<byte[]> blpop(int timeout, byte[]... keys);
+  List<byte[]> blpop(int timeout, byte[]... keys) throws InterruptedException;
 
-  List<byte[]> brpop(int timeout, byte[]... keys);
+  List<byte[]> brpop(int timeout, byte[]... keys) throws InterruptedException;
 
-  List<byte[]> blpop(byte[]... args);
+  List<byte[]> blpop(byte[]... args) throws InterruptedException;
 
-  List<byte[]> brpop(byte[]... args);
+  List<byte[]> brpop(byte[]... args) throws InterruptedException;
 
   Set<byte[]> keys(byte[] pattern);
 
@@ -68,7 +68,7 @@ public interface MultiKeyBinaryCommands {
 
   Long zunionstore(byte[] dstkey, ZParams params, byte[]... sets);
 
-  byte[] brpoplpush(byte[] source, byte[] destination, int timeout);
+  byte[] brpoplpush(byte[] source, byte[] destination, int timeout) throws InterruptedException;
 
   Long publish(byte[] channel, byte[] message);
 

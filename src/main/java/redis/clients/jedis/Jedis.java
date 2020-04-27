@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.Future;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLParameters;
@@ -1875,7 +1876,7 @@ public class Jedis extends BinaryJedis implements JedisCommands, MultiKeyCommand
    *         accordingly to the programming language used.
    */
   @Override
-  public List<String> blpop(final int timeout, final String... keys) {
+  public List<String> blpop(final int timeout, final String... keys) throws InterruptedException {
     return blpop(getArgsAddTimeout(timeout, keys));
   }
 
@@ -1891,24 +1892,24 @@ public class Jedis extends BinaryJedis implements JedisCommands, MultiKeyCommand
   }
 
   @Override
-  public List<String> blpop(final String... args) {
+  public List<String> blpop(final String... args) throws InterruptedException {
     checkIsInMultiOrPipeline();
     client.blpop(args);
     client.setTimeoutInfinite();
     try {
-      return client.getMultiBulkReply();
+      return getBlockingReply(client.getMultiBulkReplyFuture());
     } finally {
       client.rollbackTimeout();
     }
   }
 
   @Override
-  public List<String> brpop(final String... args) {
+  public List<String> brpop(final String... args) throws InterruptedException {
     checkIsInMultiOrPipeline();
     client.brpop(args);
     client.setTimeoutInfinite();
     try {
-      return client.getMultiBulkReply();
+      return getBlockingReply(client.getMultiBulkReplyFuture());
     } finally {
       client.rollbackTimeout();
     }
@@ -2014,7 +2015,7 @@ public class Jedis extends BinaryJedis implements JedisCommands, MultiKeyCommand
    *         accordingly to the programming language used.
    */
   @Override
-  public List<String> brpop(final int timeout, final String... keys) {
+  public List<String> brpop(final int timeout, final String... keys) throws InterruptedException {
     return brpop(getArgsAddTimeout(timeout, keys));
   }
 
@@ -2657,12 +2658,12 @@ public class Jedis extends BinaryJedis implements JedisCommands, MultiKeyCommand
    * @return the element
    */
   @Override
-  public String brpoplpush(final String source, final String destination, final int timeout) {
+  public String brpoplpush(final String source, final String destination, final int timeout) throws InterruptedException {
     checkIsInMultiOrPipeline();
     client.brpoplpush(source, destination, timeout);
     client.setTimeoutInfinite();
     try {
-      return client.getBulkReply();
+      return getBlockingReply(client.getBulkReplyFuture());
     } finally {
       client.rollbackTimeout();
     }
@@ -3542,12 +3543,12 @@ public class Jedis extends BinaryJedis implements JedisCommands, MultiKeyCommand
   }
 
   @Override
-  public List<String> blpop(final int timeout, final String key) {
+  public List<String> blpop(final int timeout, final String key) throws InterruptedException {
     return blpop(key, String.valueOf(timeout));
   }
 
   @Override
-  public List<String> brpop(final int timeout, final String key) {
+  public List<String> brpop(final int timeout, final String key) throws InterruptedException {
     return brpop(key, String.valueOf(timeout));
   }
 

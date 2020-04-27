@@ -261,9 +261,9 @@ public interface JedisCommands {
 
   Long rpushx(String key, String... string);
 
-  List<String> blpop(int timeout, String key);
+  List<String> blpop(int timeout, String key) throws InterruptedException;
 
-  List<String> brpop(int timeout, String key);
+  List<String> brpop(int timeout, String key) throws InterruptedException;
 
   Long del(String key);
 

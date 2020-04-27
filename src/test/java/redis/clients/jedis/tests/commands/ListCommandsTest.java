@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
 
@@ -546,7 +547,7 @@ public class ListCommandsTest extends JedisCommandTestBase {
   }
 
   @Test
-  public void brpoplpush() {
+  public void brpoplpush() throws InterruptedException {
 
     new Thread(new Runnable() {
       @Override
@@ -566,6 +567,27 @@ public class ListCommandsTest extends JedisCommandTestBase {
     assertEquals("a", element);
     assertEquals(1, jedis.llen("bar").longValue());
     assertEquals("a", jedis.lrange("bar", 0, -1).get(0));
+
+    final AtomicReference<InterruptedException> interruption = new AtomicReference<>(null);
+
+    Thread thread = new Thread(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          jedis.brpoplpush("foo", "bar", 0);
+        } catch (InterruptedException e) {
+          interruption.set(e);
+        }
+      }
+    });
+
+    thread.start();
+
+    Thread.sleep(100);
+
+    thread.interrupt();
+    thread.join();
+    assertNotNull(interruption.get());
 
     // Binary
 
@@ -587,6 +609,26 @@ public class ListCommandsTest extends JedisCommandTestBase {
     assertArrayEquals(bA, belement);
     assertEquals(1, jedis.llen("bar").longValue());
     assertArrayEquals(bA, jedis.lrange(bbar, 0, -1).get(0));
+
+    final AtomicReference<InterruptedException> binterruption = new AtomicReference<>(null);
+
+    Thread bthread = new Thread(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          jedis.brpoplpush(bfoo, bbar, 0);
+        } catch (InterruptedException e) {
+          binterruption.set(e);
+        }
+      }
+    });
+    bthread.start();
+
+    Thread.sleep(100);
+
+    bthread.interrupt();
+    bthread.join();
+    assertNotNull(binterruption.get());
 
   }
 }

@@ -1474,20 +1474,20 @@ public class JedisCluster extends BinaryJedisCluster implements JedisClusterComm
   }
 
   @Override
-  public List<String> blpop(final int timeout, final String key) {
-    return new JedisClusterCommand<List<String>>(connectionHandler, maxAttempts) {
+  public List<String> blpop(final int timeout, final String key) throws InterruptedException {
+    return new JedisBlockingClusterCommand<List<String>>(connectionHandler, maxAttempts) {
       @Override
-      public List<String> execute(Jedis connection) {
+      public List<String> execute(Jedis connection) throws InterruptedException {
         return connection.blpop(timeout, key);
       }
     }.run(key);
   }
 
   @Override
-  public List<String> brpop(final int timeout, final String key) {
-    return new JedisClusterCommand<List<String>>(connectionHandler, maxAttempts) {
+  public List<String> brpop(final int timeout, final String key) throws InterruptedException {
+    return new JedisBlockingClusterCommand<List<String>>(connectionHandler, maxAttempts) {
       @Override
-      public List<String> execute(Jedis connection) {
+      public List<String> execute(Jedis connection) throws InterruptedException {
         return connection.brpop(timeout, key);
       }
     }.run(key);
@@ -1504,10 +1504,10 @@ public class JedisCluster extends BinaryJedisCluster implements JedisClusterComm
   }
 
   @Override
-  public List<String> blpop(final int timeout, final String... keys) {
-    return new JedisClusterCommand<List<String>>(connectionHandler, maxAttempts) {
+  public List<String> blpop(final int timeout, final String... keys) throws InterruptedException {
+    return new JedisBlockingClusterCommand<List<String>>(connectionHandler, maxAttempts) {
       @Override
-      public List<String> execute(Jedis connection) {
+      public List<String> execute(Jedis connection) throws InterruptedException {
         return connection.blpop(timeout, keys);
       }
     }.run(keys.length, keys);
@@ -1515,10 +1515,10 @@ public class JedisCluster extends BinaryJedisCluster implements JedisClusterComm
   }
 
   @Override
-  public List<String> brpop(final int timeout, final String... keys) {
-    return new JedisClusterCommand<List<String>>(connectionHandler, maxAttempts) {
+  public List<String> brpop(final int timeout, final String... keys) throws InterruptedException {
+    return new JedisBlockingClusterCommand<List<String>>(connectionHandler, maxAttempts) {
       @Override
-      public List<String> execute(Jedis connection) {
+      public List<String> execute(Jedis connection) throws InterruptedException {
         return connection.brpop(timeout, keys);
       }
     }.run(keys.length, keys);
@@ -1741,10 +1741,10 @@ public class JedisCluster extends BinaryJedisCluster implements JedisClusterComm
   }
 
   @Override
-  public String brpoplpush(final String source, final String destination, final int timeout) {
-    return new JedisClusterCommand<String>(connectionHandler, maxAttempts) {
+  public String brpoplpush(final String source, final String destination, final int timeout) throws InterruptedException {
+    return new JedisBlockingClusterCommand<String>(connectionHandler, maxAttempts) {
       @Override
-      public String execute(Jedis connection) {
+      public String execute(Jedis connection) throws InterruptedException {
         return connection.brpoplpush(source, destination, timeout);
       }
     }.run(2, source, destination);

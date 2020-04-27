@@ -179,24 +179,24 @@ public class ShardedJedis extends BinaryShardedJedis implements JedisCommands, C
     return j.psetex(key, milliseconds, value);
   }
 
-  public List<String> blpop(final String arg) {
+  public List<String> blpop(final String arg) throws InterruptedException {
     Jedis j = getShard(arg);
     return j.blpop(arg);
   }
 
   @Override
-  public List<String> blpop(final int timeout, final String key) {
+  public List<String> blpop(final int timeout, final String key) throws InterruptedException {
     Jedis j = getShard(key);
     return j.blpop(timeout, key);
   }
 
-  public List<String> brpop(final String arg) {
+  public List<String> brpop(final String arg) throws InterruptedException {
     Jedis j = getShard(arg);
     return j.brpop(arg);
   }
 
   @Override
-  public List<String> brpop(final int timeout, final String key) {
+  public List<String> brpop(final int timeout, final String key) throws InterruptedException {
     Jedis j = getShard(key);
     return j.brpop(timeout, key);
   }

@@ -1490,20 +1490,20 @@ public class BinaryJedisCluster implements BinaryJedisClusterCommands,
   }
 
   @Override
-  public List<byte[]> blpop(final int timeout, final byte[]... keys) {
-    return new JedisClusterCommand<List<byte[]>>(connectionHandler, maxAttempts) {
+  public List<byte[]> blpop(final int timeout, final byte[]... keys) throws InterruptedException {
+    return new JedisBlockingClusterCommand<List<byte[]>>(connectionHandler, maxAttempts) {
       @Override
-      public List<byte[]> execute(Jedis connection) {
+      public List<byte[]> execute(Jedis connection) throws InterruptedException {
         return connection.blpop(timeout, keys);
       }
     }.runBinary(keys.length, keys);
   }
 
   @Override
-  public List<byte[]> brpop(final int timeout, final byte[]... keys) {
-    return new JedisClusterCommand<List<byte[]>>(connectionHandler, maxAttempts) {
+  public List<byte[]> brpop(final int timeout, final byte[]... keys) throws InterruptedException {
+    return new JedisBlockingClusterCommand<List<byte[]>>(connectionHandler, maxAttempts) {
       @Override
-      public List<byte[]> execute(Jedis connection) {
+      public List<byte[]> execute(Jedis connection) throws InterruptedException {
         return connection.brpop(timeout, keys);
       }
     }.runBinary(keys.length, keys);
@@ -1726,10 +1726,10 @@ public class BinaryJedisCluster implements BinaryJedisClusterCommands,
   }
 
   @Override
-  public byte[] brpoplpush(final byte[] source, final byte[] destination, final int timeout) {
-    return new JedisClusterCommand<byte[]>(connectionHandler, maxAttempts) {
+  public byte[] brpoplpush(final byte[] source, final byte[] destination, final int timeout) throws InterruptedException {
+    return new JedisBlockingClusterCommand<byte[]>(connectionHandler, maxAttempts) {
       @Override
-      public byte[] execute(Jedis connection) {
+      public byte[] execute(Jedis connection) throws InterruptedException {
         return connection.brpoplpush(source, destination, timeout);
       }
     }.runBinary(2, source, destination);

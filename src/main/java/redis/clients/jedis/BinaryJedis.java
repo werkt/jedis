@@ -15,6 +15,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLParameters;
@@ -2098,7 +2100,7 @@ public class BinaryJedis implements BasicCommands, BinaryJedisCommands, MultiKey
    *         accordingly to the programming language used.
    */
   @Override
-  public List<byte[]> blpop(final int timeout, final byte[]... keys) {
+  public List<byte[]> blpop(final int timeout, final byte[]... keys) throws InterruptedException {
     return blpop(getArgsAddTimeout(timeout, keys));
   }
 
@@ -2212,31 +2214,62 @@ public class BinaryJedis implements BasicCommands, BinaryJedisCommands, MultiKey
    *         accordingly to the programming language used.
    */
   @Override
-  public List<byte[]> brpop(final int timeout, final byte[]... keys) {
+  public List<byte[]> brpop(final int timeout, final byte[]... keys) throws InterruptedException {
     return brpop(getArgsAddTimeout(timeout, keys));
   }
 
-  @Override
-  public List<byte[]> blpop(final byte[]... args) {
-    checkIsInMultiOrPipeline();
-    client.blpop(args);
-    client.setTimeoutInfinite();
-    try {
-      return client.getBinaryMultiBulkReply();
-    } finally {
-      client.rollbackTimeout();
+  public <T> T getBlockingReply(Future<T> reply) throws InterruptedException {
+    InterruptedException interruption = null;
+    for (;;) {
+      try {
+        return reply.get();
+      } catch (ExecutionException e) {
+        Throwable cause = e.getCause();
+        if (interruption != null) {
+          // restore client connection before returning control
+          client.connect();
+          interruption.addSuppressed(cause);
+          Thread.currentThread().interrupt();
+          throw interruption;
+        }
+        if (cause instanceof RuntimeException) {
+          throw (RuntimeException) cause;
+        }
+        throw new RuntimeException(cause);
+      } catch (InterruptedException e) {
+        interruption = e;
+        // clear interrupt flag
+        Thread.interrupted();
+        client.close();
+      }
     }
   }
 
   @Override
-  public List<byte[]> brpop(final byte[]... args) {
+  public List<byte[]> blpop(final byte[]... args) throws InterruptedException {
+    checkIsInMultiOrPipeline();
+    client.blpop(args);
+    client.setTimeoutInfinite();
+    try {
+      return getBlockingReply(client.getBinaryMultiBulkReplyFuture());
+    } finally {
+      if (client.isConnected()) {
+        client.rollbackTimeout();
+      }
+    }
+  }
+
+  @Override
+  public List<byte[]> brpop(final byte[]... args) throws InterruptedException {
     checkIsInMultiOrPipeline();
     client.brpop(args);
     client.setTimeoutInfinite();
     try {
-      return client.getBinaryMultiBulkReply();
+      return getBlockingReply(client.getBinaryMultiBulkReplyFuture());
     } finally {
-      client.rollbackTimeout();
+      if (client.isConnected()) {
+        client.rollbackTimeout();
+      }
     }
   }
 
@@ -3217,14 +3250,16 @@ public class BinaryJedis implements BasicCommands, BinaryJedisCommands, MultiKey
    * @return the element
    */
   @Override
-  public byte[] brpoplpush(final byte[] source, final byte[] destination, final int timeout) {
+  public byte[] brpoplpush(final byte[] source, final byte[] destination, final int timeout) throws InterruptedException {
     checkIsInMultiOrPipeline();
     client.brpoplpush(source, destination, timeout);
     client.setTimeoutInfinite();
     try {
-      return client.getBinaryBulkReply();
+      return getBlockingReply(client.getBinaryBulkReplyFuture());
     } finally {
-      client.rollbackTimeout();
+      if (client.isConnected()) {
+        client.rollbackTimeout();
+      }
     }
   }
 

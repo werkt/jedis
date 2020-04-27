@@ -17,9 +17,9 @@ public interface MultiKeyJedisClusterCommands {
 
   Long exists(String... keys);
 
-  List<String> blpop(int timeout, String... keys);
+  List<String> blpop(int timeout, String... keys) throws InterruptedException;
 
-  List<String> brpop(int timeout, String... keys);
+  List<String> brpop(int timeout, String... keys) throws InterruptedException;
 
   List<String> mget(String... keys);
 
@@ -59,7 +59,7 @@ public interface MultiKeyJedisClusterCommands {
 
   Long zunionstore(String dstkey, ZParams params, String... sets);
 
-  String brpoplpush(String source, String destination, int timeout);
+  String brpoplpush(String source, String destination, int timeout) throws InterruptedException;
 
   Long publish(String channel, String message);
 

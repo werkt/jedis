@@ -18,9 +18,9 @@ public interface MultiKeyBinaryJedisClusterCommands {
 
   Long exists(byte[]... keys);
 
-  List<byte[]> blpop(int timeout, byte[]... keys);
+  List<byte[]> blpop(int timeout, byte[]... keys) throws InterruptedException;
 
-  List<byte[]> brpop(int timeout, byte[]... keys);
+  List<byte[]> brpop(int timeout, byte[]... keys) throws InterruptedException;
 
   List<byte[]> mget(byte[]... keys);
 
@@ -60,7 +60,7 @@ public interface MultiKeyBinaryJedisClusterCommands {
 
   Long zunionstore(byte[] dstkey, ZParams params, byte[]... sets);
 
-  byte[] brpoplpush(byte[] source, byte[] destination, int timeout);
+  byte[] brpoplpush(byte[] source, byte[] destination, int timeout) throws InterruptedException;
 
   Long publish(byte[] channel, byte[] message);
 

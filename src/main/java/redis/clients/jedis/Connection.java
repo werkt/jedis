@@ -7,6 +7,11 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLParameters;
@@ -38,6 +43,7 @@ public class Connection implements Closeable {
   private SSLParameters sslParameters;
   private HostnameVerifier hostnameVerifier;
   private CommandListener commandListener;
+  private ExecutorService service;
 
   public Connection() {
   }
@@ -211,6 +217,7 @@ public class Connection implements Closeable {
           }
         }
 
+        broken = false;
         outputStream = new RedisOutputStream(socket.getOutputStream());
         inputStream = new RedisInputStream(socket.getInputStream());
       } catch (IOException ex) {
@@ -226,8 +233,22 @@ public class Connection implements Closeable {
     disconnect();
   }
 
+  private ExecutorService getService() {
+    if (service == null && isConnected()) {
+      service = Executors.newSingleThreadExecutor();
+    }
+    if (service == null) {
+      throw new IllegalStateException("Cannot get service when not connected");
+    }
+    return service;
+  }
+
   public void disconnect() {
     if (isConnected()) {
+      if (service != null) {
+        service.shutdown();
+        service = null;
+      }
       try {
         outputStream.flush();
         socket.close();
@@ -255,6 +276,15 @@ public class Connection implements Closeable {
     }
   }
 
+  public Future<String> getBulkReplyFuture() {
+    return getService().submit(new Callable<String>() {
+      @Override
+      public String call() {
+        return getBulkReply();
+      }
+    });
+  }
+
   public String getBulkReply() {
     final byte[] result = getBinaryBulkReply();
     if (null != result) {
@@ -269,6 +299,15 @@ public class Connection implements Closeable {
     return (byte[]) readProtocolWithCheckingBroken();
   }
 
+  public Future<byte[]> getBinaryBulkReplyFuture() {
+    return getService().submit(new Callable<byte[]>() {
+      @Override
+      public byte[] call() {
+        return getBinaryBulkReply();
+      }
+    });
+  }
+
   public Long getIntegerReply() {
     flush();
     return (Long) readProtocolWithCheckingBroken();
@@ -278,10 +317,28 @@ public class Connection implements Closeable {
     return BuilderFactory.STRING_LIST.build(getBinaryMultiBulkReply());
   }
 
+  public Future<List<String>> getMultiBulkReplyFuture() {
+    return getService().submit(new Callable<List<String>>() {
+      @Override
+      public List<String> call() {
+        return getMultiBulkReply();
+      }
+    });
+  }
+
   @SuppressWarnings("unchecked")
   public List<byte[]> getBinaryMultiBulkReply() {
     flush();
     return (List<byte[]>) readProtocolWithCheckingBroken();
+  }
+
+  public Future<List<byte[]>> getBinaryMultiBulkReplyFuture() {
+    return getService().submit(new Callable<List<byte[]>>() {
+      @Override
+      public List<byte[]> call() {
+        return getBinaryMultiBulkReply();
+      }
+    });
   }
 
   @Deprecated
