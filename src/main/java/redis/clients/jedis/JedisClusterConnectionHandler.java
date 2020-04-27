@@ -10,6 +10,7 @@ import javax.net.ssl.SSLSocketFactory;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
 import redis.clients.jedis.exceptions.JedisConnectionException;
+import redis.clients.jedis.exceptions.JedisNoReachableClusterNodeException;
 
 public abstract class JedisClusterConnectionHandler implements Closeable {
   protected final JedisClusterInfoCache cache;
@@ -56,6 +57,8 @@ public abstract class JedisClusterConnectionHandler implements Closeable {
   private void initializeSlotsCache(Set<HostAndPort> startNodes,
       int connectionTimeout, int soTimeout, String password, String clientName,
       boolean ssl, SSLSocketFactory sslSocketFactory, SSLParameters sslParameters, HostnameVerifier hostnameVerifier) {
+    boolean initialized = false;
+    JedisNoReachableClusterNodeException jnrcne = null;
     for (HostAndPort hostAndPort : startNodes) {
       Jedis jedis = null;
       try {
@@ -67,14 +70,21 @@ public abstract class JedisClusterConnectionHandler implements Closeable {
           jedis.clientSetname(clientName);
         }
         cache.discoverClusterNodesAndSlots(jedis);
+        initialized = true;
         break;
       } catch (JedisConnectionException e) {
-        // try next nodes
+        if (jnrcne == null) {
+          jnrcne = new JedisNoReachableClusterNodeException("No reachable node in cluster");
+        }
+        jnrcne.addSuppressed(e);
       } finally {
         if (jedis != null) {
           jedis.close();
         }
       }
+    }
+    if (!initialized && jnrcne != null) {
+      throw jnrcne;
     }
   }
 
