@@ -2,14 +2,13 @@ package redis.clients.jedis;
 
 import java.io.Serializable;
 import java.net.InetAddress;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class HostAndPort implements Serializable {
   private static final long serialVersionUID = -519876229978427751L;
 
-  protected static Logger log = LoggerFactory.getLogger(HostAndPort.class.getName());
+  protected static Logger log = Logger.getLogger(HostAndPort.class.getName());
   public static volatile String localhost;
 
 
@@ -111,7 +110,7 @@ public class HostAndPort implements Serializable {
         return host;
     } catch (Exception e) {
       // Not a valid IP address
-      log.warn("{}.convertHost '" + host + "' is not a valid IP address. ", HostAndPort.class.getName(), e);
+      log.logp(Level.WARNING, HostAndPort.class.getName(), "convertHost", "'" + host + "' is not a valid IP address. ", e);
       return host;
     }
   }
@@ -143,8 +142,7 @@ public class HostAndPort implements Serializable {
     try {
       localAddress = InetAddress.getLocalHost().getHostAddress();
     } catch (Exception ex) {
-      log.error("{}.getLocalHostQuietly : cant resolve localhost address",
-        HostAndPort.class.getName(), ex);
+      log.logp(Level.SEVERE, HostAndPort.class.getName(), "getLocalHostQuietly", "cant resolve localhost address", ex);
       localAddress = "localhost";
     }
     return localAddress;

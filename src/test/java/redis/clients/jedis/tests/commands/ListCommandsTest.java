@@ -557,7 +557,7 @@ public class ListCommandsTest extends JedisCommandTestBase {
           Jedis j = createJedis();
           j.lpush("foo", "a");
         } catch (InterruptedException e) {
-          org.apache.logging.log4j.LogManager.getLogger().error("Interruption in string lpush", e);
+          e.printStackTrace();
         }
       }
     }).start();
@@ -599,7 +599,7 @@ public class ListCommandsTest extends JedisCommandTestBase {
           Jedis j = createJedis();
           j.lpush(bfoo, bA);
         } catch (InterruptedException e) {
-          org.apache.logging.log4j.LogManager.getLogger().error("Interruption in binary lpush", e);
+          e.printStackTrace();
         }
       }
     }).start();
