@@ -8,6 +8,8 @@ import redis.clients.jedis.exceptions.JedisMovedDataException;
 import redis.clients.jedis.exceptions.JedisNoReachableClusterNodeException;
 import redis.clients.jedis.exceptions.JedisRedirectionException;
 import redis.clients.jedis.util.JedisClusterCRC16;
+import java.util.ArrayList;
+import java.util.List;
 
 public abstract class JedisClusterCommand<T> {
 
@@ -82,6 +84,7 @@ public abstract class JedisClusterCommand<T> {
   }
 
   private T runWithRetries(final int slot, int attempts, boolean tryRandomNode, JedisRedirectionException redirect) {
+    List<JedisConnectionException> failures = new ArrayList<>();
     while (attempts > 0) {
       Jedis connection = null;
       try {
@@ -118,6 +121,7 @@ public abstract class JedisClusterCommand<T> {
         }
 
         attempts--;
+        failures.add(jce);
       } catch (JedisRedirectionException jre) {
         // if MOVED redirection occurred,
         if (jre instanceof JedisMovedDataException) {
@@ -129,12 +133,30 @@ public abstract class JedisClusterCommand<T> {
         releaseConnection(connection);
         connection = null;
 
+        if (redirect != null) {
+          if (jre.getCause() == null) {
+            jre.initCause(redirect);
+          } else {
+            jre.addSuppressed(redirect);
+          }
+        }
+        for (JedisConnectionException e : failures) {
+          jre.addSuppressed(e);
+        }
+
         return runWithRetries(slot, attempts - 1, false, jre);
       } finally {
         releaseConnection(connection);
       }
     }
-    throw new JedisClusterMaxAttemptsException("No more cluster attempts left.");
+    JedisClusterMaxAttemptsException jcmae = new JedisClusterMaxAttemptsException("No more cluster attempts left.");
+    if (redirect != null) {
+      jcmae.initCause(redirect);
+    }
+    for (JedisConnectionException e : failures) {
+      jcmae.addSuppressed(e);
+    }
+    throw jcmae;
   }
 
   private void releaseConnection(Jedis connection) {
